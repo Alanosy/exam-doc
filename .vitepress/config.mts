@@ -83,6 +83,7 @@ export default defineConfig({
             { text: '组织与权限', link: '/admin/' },
             { text: '用户与角色', link: '/admin/users-roles' },
             { text: '系统设置', link: '/admin/settings' },
+            { text: '部署到 Vercel', link: '/admin/deploy-vercel' },
             { text: '私有化部署', link: '/admin/deployment' }
           ]
         },
@@ -100,7 +101,7 @@ export default defineConfig({
       ]
     },
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/Alanosy/exam-doc' }],
 
     footer: {
       message: '砚考 · 让每一次考试都经得起检验',

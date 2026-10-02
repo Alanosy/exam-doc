@@ -21,6 +21,14 @@ npm run docs:preview
 
 构建产物输出到 `.vitepress/dist`，可直接部署到任意静态托管或 Nginx。
 
+## 部署
+
+项目已通过 GitHub 自动部署到 Vercel：推送到 `main` 即发布生产环境，
+发起 PR 会自动生成预览链接。构建参数写在根目录 `vercel.json`，
+Vercel 控制台导入仓库时无需手填。
+
+详见 [部署到 Vercel](admin/deploy-vercel.md)。
+
 ## 目录结构
 
 ```text
@@ -46,6 +54,7 @@ npm run docs:preview
 │   └── webhook.md            #   Webhook 与集成
 ├── faq.md                    # 常见问题
 ├── changelog.md              # 更新日志
+├── vercel.json               # Vercel 部署配置
 └── .vitepress/
     ├── config.mts            # 站点配置
     └── theme/                # 主题与样式

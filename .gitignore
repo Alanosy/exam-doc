@@ -4,5 +4,8 @@ node_modules/
 .DS_Store
 *.log
 
+# Vercel 本地部署缓存
+.vercel
+
 # WorkBuddy 本地工作笔记，不随仓库提交
 .workbuddy/

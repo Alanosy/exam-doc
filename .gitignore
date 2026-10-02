@@ -1,0 +1,8 @@
+node_modules/
+.vitepress/dist/
+.vitepress/cache/
+.DS_Store
+*.log
+
+# WorkBuddy 本地工作笔记，不随仓库提交
+.workbuddy/

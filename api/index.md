@@ -1,227 +1,219 @@
+---
+title: API 概览
+description: 砚考 RESTful 接口的调用约定、鉴权方式、网关前缀与错误码
+---
+
 # API 概览
 
-砚考提供 RESTful 开放接口，用于题库同步、考试创建、成绩拉取等系统集成场景。
+砚考的全部接口经网关统一暴露。这份文档描述**实际存在的接口**，供第三方系统集成使用。
 
-::: tip 先确认版本
-本文描述 `v1` 接口。接口路径统一前缀 `/api/v1`。
+::: tip 想看 Swagger
+服务起来后可以直接用 SpringDoc 界面：
+
+```text
+http://<网关>:8080/<服务前缀>/v3/api-docs
+```
+
+网关白名单里已经放行了 `/*/v3/api-docs`。详见 [接口文档配置](/backend/framework/association/doc)。
 :::
 
-## 接入准备
+## 基础约定
 
-### 获取凭证
-
-在 **系统管理 → 开放接口 → 应用管理** 中创建应用，得到：
-
-| 凭证 | 说明 |
+| 项 | 值 |
 | --- | --- |
-| `appId` | 应用标识，可公开 |
-| `appSecret` | 密钥，**仅创建时可见一次**，请妥善保存 |
-| `scope` | 该应用被授权的接口范围 |
+| 协议 | HTTP/HTTPS |
+| 网关地址 | `http://<host>:8080` |
+| 生产反代前缀 | `/prod-api`（Nginx 剥掉前缀后转发） |
+| 数据格式 | `application/json` |
+| 字符集 | UTF-8 |
 
-### 鉴权
+## 服务前缀一览
 
-采用 `Bearer Token`：
+| 前缀 | 服务 | 端口 |
+| --- | --- | :---: |
+| `/auth` | 认证中心 | 9210 |
+| `/system`、`/monitor` | 系统管理 | 9201 |
+| `/tool` | 代码生成 | 9202 |
+| `/resource` | 文件/OSS/短信/邮件 | 9204 |
+| `/workflow` | 工作流 | 9205 |
+| `/question`、`/bank`、`/bankCategory`、`/option`、`/tag` | 题库 | 9211 |
+| `/paper` | 试卷 | 9212 |
+| `/exam`、`/invite` | 考试管理 | 9213 |
+| **`/answer`** | 答题（内部 `/record`） | 9214 |
+| `/mark` | 阅卷 | 9215 |
+| `/stat` | 统计 | 9216 |
+| **`/practice`** | 错题本（内部 `/wrong`） | 9217 |
+| `/cert` | 证书 | 9218 |
+| **`/proctor`** | 防作弊 | 9219 |
+| `/ai` | AI | 9220 |
 
-```bash
-# 1. 换取 token（有效期 2 小时）
-curl -X POST https://kaoshi.example.edu.cn/api/v1/auth/token \
-  -H 'Content-Type: application/json' \
-  -d '{
-        "appId": "your-app-id",
-        "appSecret": "your-app-secret"
-      }'
+::: warning 三个服务会剥掉前缀
+`answer`、`practice`、`proctor` 三条网关路由配了 `StripPrefix=1`：
 
-# 返回
-{
-  "accessToken": "eyJhbGciOi...",
-  "expiresIn": 7200
-}
+```text
+对外 /answer/record/center        → 内部 /record/center
+对外 /practice/wrong/overview     → 内部 /wrong/overview
+对外 /proctor/exam/list           → 内部 /exam/list
 ```
 
-```bash
-# 2. 调用业务接口
-curl https://kaoshi.example.edu.cn/api/v1/question-banks \
-  -H "Authorization: Bearer eyJhbGciOi..."
-```
-
-::: warning Token 请在服务端缓存复用
-每个 Token 有效期 2 小时，不要每次请求都重新换取。
-建议提前 5 分钟刷新。
+调用时**用对外形式**。其它服务前缀与内部路径一致。
 :::
 
-## 通用约定
+## 鉴权
 
-### 请求
+砚考用 Sa-Token + JWT。
 
-- 编码：`UTF-8`
-- 请求体：`application/json`
-- 时间格式：ISO 8601，如 `2026-04-10T09:00:00+08:00`
-- 分页参数：`page`（从 1 开始）、`pageSize`（默认 20，最大 200）
-
-### 响应
-
-成功：
-
-```json
-{
-  "code": 0,
-  "message": "ok",
-  "data": { }
-}
-```
-
-失败：
-
-```json
-{
-  "code": 40001,
-  "message": "参数校验失败：questionType 不合法",
-  "traceId": "a1b2c3d4"
-}
-```
-
-常见错误码：
-
-| code | 含义 | 处理建议 |
-| --- | --- | --- |
-| 0 | 成功 | — |
-| 40001 | 参数校验失败 | 检查请求体 |
-| 40101 | Token 无效或过期 | 重新换取 Token |
-| 40301 | 无该接口权限 | 检查应用 scope |
-| 40302 | 数据范围受限 | 检查应用被授权的组织节点 |
-| 40401 | 资源不存在 | — |
-| 42901 | 触发限流 | 按 `Retry-After` 退避重试 |
-| 50000 | 服务端错误 | 携带 `traceId` 联系支持 |
-
-### 限流
-
-默认 100 次/秒/应用。超限返回 42901，响应头 `Retry-After` 给出建议等待秒数。
-
-### 幂等
-
-所有写接口支持 `Idempotency-Key` 请求头，24 小时内重复请求会返回首次结果。
-
-## 主要资源
-
-| 资源 | 路径 | 说明 |
-| --- | --- | --- |
-| 题库 | `/api/v1/question-banks` | 题库增删改查 |
-| 题目 | `/api/v1/questions` | 题目增删改查、批量导入 |
-| 知识点 | `/api/v1/knowledge-points` | 知识点树 |
-| 试卷 | `/api/v1/papers` | 组卷、生成平行卷 |
-| 考试 | `/api/v1/exams` | 创建、发布、查询 |
-| 考生 | `/api/v1/exams/{id}/candidates` | 名单管理 |
-| 作答 | `/api/v1/exams/{id}/submissions` | 作答记录 |
-| 成绩 | `/api/v1/exams/{id}/scores` | 成绩查询与导出 |
-| 组织 | `/api/v1/organizations` | 组织树同步 |
-| 用户 | `/api/v1/users` | 用户同步 |
-
-## 示例：从自有题库同步题目
+### 1. 获取验证码
 
 ```bash
-curl -X POST https://kaoshi.example.edu.cn/api/v1/questions:batchImport \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: import-20260410-001" \
-  -d '{
-        "questionBankId": "qb_1a2b3c",
-        "onDuplicate": "skip",
-        "questions": [
-          {
-            "questionType": "single_choice",
-            "stem": "关于惯性，下列说法正确的是：",
-            "options": [
-              { "key": "A", "content": "物体运动越快惯性越大" },
-              { "key": "B", "content": "静止的物体没有惯性" },
-              { "key": "C", "content": "惯性大小只与质量有关" },
-              { "key": "D", "content": "失重状态下惯性消失" }
-            ],
-            "answer": ["C"],
-            "analysis": "惯性是物体的固有属性，仅由质量决定。",
-            "difficulty": 0.7,
-            "knowledgePointPaths": ["力学/牛顿运动定律"],
-            "externalId": "legacy-10231"
-          }
-        ]
-      }'
+GET /auth/code
 ```
 
 响应：
 
 ```json
 {
-  "code": 0,
-  "data": {
-    "total": 1,
-    "created": 1,
-    "skipped": 0,
-    "failed": 0,
-    "items": [
-      { "externalId": "legacy-10231", "questionId": "q_9f8e7d", "status": "created" }
-    ]
-  }
+  "captchaEnabled": true,
+  "code": 200,
+  "img": "data:image/png;base64,...",
+  "uuid": "8f3c1a2b-..."
 }
 ```
 
-`externalId` 用于把砚考的题目 ID 与你方系统关联，后续可通过它做增量更新。
+调试期可以在 Nacos 的 `ruoyi-auth.yml` 里把 `captcha.enabled` 设为 `false` 关掉验证码。
 
-## 示例：拉取一场考试的成绩
+### 2. 登录
 
 ```bash
-curl "https://kaoshi.example.edu.cn/api/v1/exams/exam_5d6e7f/scores?page=1&pageSize=200" \
-  -H "Authorization: Bearer <token>"
+POST /auth/login
+Content-Type: application/json
+
+{
+  "tenantId": "000000",
+  "username": "admin",
+  "password": "admin123",
+  "rememberMe": false,
+  "uuid": "<上一步的 uuid>",
+  "code": "12",
+  "clientId": "e5cd7e4891bf95d1d19206ce24a7b32e",
+  "grantType": "password"
+}
 ```
+
+响应里拿到 `access_token`（在 `Authorization` 字段）。
+
+### 3. 携带 Token
+
+```bash
+GET /exam/list
+Authorization: Bearer <access_token>
+```
+
+::: tip clientId 需与后端一致
+`clientId` / `grantType` 必须与 `sys_client` 表里的一条记录匹配。
+前端 `.env` 里的 `VITE_APP_CLIENT_ID` 是同一个值。
+:::
+
+### 免登录白名单
+
+网关默认放行这些路径：
+
+```text
+/auth/code   /auth/logout   /auth/login
+/auth/binding/*   /auth/register   /auth/tenant/list
+/resource/sms/code   /resource/sse/close
+/*/v3/api-docs   /*/error   /csrf   /warm-flow-ui/**
+```
+
+配置在 `ruoyi-gateway.yml` 的 `security.ignore.whites`。
+详见 [网关路由与放行](/backend/framework/basic/router_release)。
+
+## 接口加密
+
+`application-common.yml` 默认开启 `api-decrypt.enabled: true`，用 RSA 对请求/响应体加解密。
+
+| 场景 | 处理 |
+| --- | --- |
+| 浏览器 | 前端自动处理（`.env` 里的公私钥） |
+| 第三方集成 | **建议关闭或单独协商密钥** |
+
+::: danger 开源仓库里的密钥是公开的
+仓库内置的 RSA 密钥对等于没加密。生产必须重新生成。
+详见 [请求响应加解密](/questions/api_encrypt)。
+:::
+
+调试时可以临时关掉（后端 `api-decrypt.enabled: false`，前端 `VITE_APP_ENCRYPT=false`），详见 [登录调试步骤](/questions/login_step)。
+
+## 统一响应结构
 
 ```json
 {
-  "code": 0,
-  "data": {
-    "examId": "exam_5d6e7f",
-    "examName": "大学物理 A · 期中测验",
-    "total": 248,
-    "page": 1,
-    "pageSize": 200,
-    "items": [
-      {
-        "userId": "u_20240101",
-        "studentNo": "2024010101",
-        "name": "张三",
-        "status": "submitted",
-        "score": 82.5,
-        "adjustedScore": null,
-        "durationSeconds": 4210,
-        "submittedAt": "2026-04-10T10:12:31+08:00"
-      }
-    ]
-  }
+  "code": 200,
+  "msg": "操作成功",
+  "data": { }
 }
 ```
 
-`status` 取值：`not_started` / `in_progress` / `submitted` / `absent` / `deferred` / `violation`。
-
-## 事件推送
-
-除主动查询外，砚考也会主动推送事件（考试发布、交卷、成绩发布等），
-详见 [Webhook 与集成](/api/webhook)。
-
-## SDK
-
-| 语言 | 安装 |
+| code | 含义 |
 | --- | --- |
-| Node.js | `npm install @yankao/sdk` |
-| Python | `pip install yankao-sdk` |
-| Java | Maven 坐标请联系交付团队 |
+| 200 | 成功 |
+| 401 | 未认证 / Token 失效 |
+| 403 | 无权限 |
+| 500 | 服务端异常 |
 
-## 最佳实践
+失败时 `data` 通常为 `null`，`msg` 带具体原因。
 
-1. **批量优于循环**：题目导入、名单导入一律用批量接口
-2. **用 `externalId` 做映射**：不要依赖砚考内部 ID 做业务判断
-3. **缓存 Token**：2 小时有效期内复用
-4. **处理限流**：实现指数退避重试
-5. **记录 `traceId`**：排查问题时这是唯一有效线索
-6. **只读优先**：只同步数据时，把应用 scope 限制为只读
+## 分页约定
 
-## 沙箱环境
+列表接口统一用 query 参数：
 
-申请到的测试应用默认指向沙箱环境 `https://sandbox-yankao.example.com`，
-数据每日凌晨清空，可放心做压测与联调。
+| 参数 | 说明 |
+| --- | --- |
+| `pageNum` | 页码，从 1 开始 |
+| `pageSize` | 每页条数 |
+| `orderByColumn` | 排序列 |
+| `isAsc` | `asc` / `desc` |
+
+```bash
+GET /exam/list?pageNum=1&pageSize=20
+```
+
+详见 [分页功能](/backend/framework/basic/page)。
+
+## 雪花 ID
+
+::: danger 所有 ID 都是 19 位雪花 ID
+超过 JavaScript `Number.MAX_SAFE_INTEGER`（9007199254740991）。
+**JSON 解析时必须用字符串 / int64**，否则精度丢失，查不到数据。
+
+```json
+{ "examId": 1834523456789012345 }
+```
+
+- Java：用 `Long`
+- TypeScript：用 `string`
+- Python：`int`（安全）
+:::
+
+## 幂等性
+
+砚考对写操作有 [防重幂等](/backend/framework/extend/idempotent) 支持。
+特别是 **交卷接口是幂等的**——重复提交不会生成多份成绩。
+
+## 接口清单
+
+| 分组 | 说明 |
+| --- | --- |
+| [考生端接口](/api/exam) | 考试中心、答题、交卷、成绩、错题本、证书 |
+| [管理端接口](/api/admin) | 题库、试卷、考试、阅卷、统计、证书管理 |
+
+## 常见问题
+
+- 401 但已带 Token → [放行接口认证失败](/questions/identify_fail)
+- 返回密文 → [请求响应加解密](/questions/api_encrypt)
+- 文档打不开 → [Swagger 相关问题](/questions/swagger)
+
+## 相关
+
+- 服务的领域边界：[考试微服务总览](/backend/exam/overview)
+- 服务间 RPC：[服务间调用](/backend/exam/invocation)

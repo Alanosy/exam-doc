@@ -1,6 +1,7 @@
 node_modules/
 .vitepress/dist/
 .vitepress/cache/
+.vitepress/config.mts.timestamp-*
 .DS_Store
 *.log
 

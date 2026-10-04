@@ -57,6 +57,16 @@ const guideSidebar = [
     ]
   },
   {
+    text: 'AI 能力',
+    collapsed: false,
+    items: [
+      { text: 'AI 功能总览', link: '/guide/ai-overview' },
+      { text: 'AI 出题与质检', link: '/guide/ai-question' },
+      { text: 'AI 阅卷', link: '/guide/ai-grading' },
+      { text: 'AI 学情与推题', link: '/guide/ai-learning' }
+    ]
+  },
+  {
     text: '管理与运维',
     items: [
       { text: '用户与角色权限', link: '/guide/users-roles' },
@@ -94,6 +104,20 @@ const backendSidebar = [
     items: [
       { text: '考试微服务总览', link: '/backend/exam/overview' },
       { text: '服务间调用', link: '/backend/exam/invocation' }
+    ]
+  },
+  {
+    text: 'AI 能力',
+    collapsed: false,
+    items: [
+      { text: 'AI 能力总览', link: '/backend/ai/' },
+      { text: 'AI 服务部署与配置', link: '/backend/ai/quickstart' },
+      { text: 'Skill 技能详解', link: '/backend/ai/skills' },
+      { text: 'Tool 工具与护栏', link: '/backend/ai/tools' },
+      { text: '模型网关', link: '/backend/ai/model-gateway' },
+      { text: '对话式 Agent', link: '/backend/ai/chat' },
+      { text: '提示词体系', link: '/backend/ai/prompts' },
+      { text: 'Agent 接口清单', link: '/backend/ai/api' }
     ]
   },
   {
@@ -222,7 +246,8 @@ const apiSidebar = [
     text: '接口清单',
     items: [
       { text: '考生端接口', link: '/api/exam' },
-      { text: '管理端接口', link: '/api/admin' }
+      { text: '管理端接口', link: '/api/admin' },
+      { text: 'AI 接口', link: '/api/ai' }
     ]
   }
 ]

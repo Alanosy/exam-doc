@@ -25,6 +25,15 @@ description: 砚考从建题库到出成绩的实操指南
 | 给主观题打分 | [阅卷与成绩](/guide/grading) |
 | 看班级学情 | [成绩与学情分析](/guide/analytics) |
 
+### 我用 AI 省时间
+
+| 我要做 | 去哪 |
+| --- | --- |
+| 先看 AI 能做什么 | [AI 功能总览](/guide/ai-overview) |
+| 批量出题、自动质检 | [AI 出题与质检](/guide/ai-question) |
+| 给主观题预评分 | [AI 阅卷](/guide/ai-grading) |
+| 知道学生哪里没学会 | [AI 学情与推题](/guide/ai-learning) |
+
 ### 我是管理员 / 运维
 
 | 我要做 | 去哪 |
@@ -42,6 +51,7 @@ description: 砚考从建题库到出成绩的实操指南
 | 回看自己的答卷 | [考试记录](/guide/getting-started#第-6-步回看答卷) |
 | 复习错题 | [错题本](/guide/wrong-book) |
 | 拿证书 | [证书管理](/guide/certificate) |
+| 让 AI 帮我分析薄弱点 | [AI 学情与推题](/guide/ai-learning) |
 
 ## 先理解三个概念
 

@@ -64,6 +64,7 @@ description: 砚考在线考试系统后端（exam-back）的部署、微服务�
 | [服务清单与端口](/backend/services) | 所有人 | 所有微服务的端口、职责与依赖方向 |
 | [快速开始](/backend/quickstart/requirements) | 部署人员 | 从装中间件到跑完整套环境的完整链路 |
 | [考试微服务](/backend/exam/overview) | 后端开发 | 10 个考试服务的领域划分、数据表与调用关系 |
+| [AI 能力](/backend/ai/) | 后端开发 / 部署 | AI 子系统：Java 网关 + Python Agent、Skill、Tool、模型网关 |
 | [框架能力](/backend/framework/tree) | 后端开发 | 继承的通用能力：代码生成、权限、多租户、RPC、缓存… |
 | [扩展功能](/backend/extend-function/nacos) | 运维 | ELK、SkyWalking、消息队列等可选中间件搭建 |
 
